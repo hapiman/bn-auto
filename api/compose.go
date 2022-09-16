@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/adshao/go-binance/v2"
+	"time"
 )
 
 // 交易网格
@@ -71,49 +72,105 @@ func getLeftAndRightPrice(price string) (sm, lg string) {
 }
 
 // 买的的时候挂委托单，卖的时候现价单，先这样做
-func AutoGo() {
-	symbol := "ATOMUSDT"
+func AutoGo(symbol string) {
 	price := GetPrice(symbol)
-	smPri, _ := getLeftAndRightPrice(price)  // 14.8 => 14.6
-	_smPri, _ := getLeftAndRightPrice(smPri) // 14.6  => 14.4
+	smPri, _ := getLeftAndRightPrice(price)  // 14.8 => (14.6,14.8) 或者 14.81 => (14.8,15)
+	_smPri, _ := getLeftAndRightPrice(smPri) // 14.6 => (14.4,16.6)
 	txs := queryUnSettledTxs()
 	fmt.Println("AutoGo unsettled order length: ", len(txs))
-	for _, v := range txs {
-		if v.PriceIn != smPri { // 没有未结束的买单
-			quantity := gPriceToQuantityMap[smPri]
-			ordRs, err := CreateOrder(symbol, quantity, smPri, binance.SideTypeBuy)
-			if err != nil {
-				fmt.Println("AutoGo CreateOrder buy err: ", err, v)
-				break
-			}
-			tx := BnTxs{
-				Symbol:        symbol,
-				Quantity:      quantity,
-				PriceIn:       smPri,
-				OrderIn:       ordRs.OrderID,
-				OrderInStatus: 1,
-			}
-			if err := CreateTx(&tx); err != nil {
-				fmt.Println("AutoGo CreateTx buy err: ", err, v)
-			}
-			break
+	checkBuy(txs, smPri, symbol)
+	checkSell(txs, _smPri, symbol)
+}
+
+func SyncOrd(symbol string) {
+	for {
+		CheckOrd(symbol)
+		time.Sleep(time.Second * 10)
+	}
+}
+
+func CheckOrd(symbol string) {
+	txs := queryUnSettledTxs()
+	for _, tx := range txs {
+		if tx.OrderInStatus != 0 {
+			continue
+		}
+		res, err := GetOrder(symbol, tx.OrderIn)
+		if err != nil {
+			fmt.Println("CheckOrd GetOrder err", err)
+			continue
 		}
 
-		if v.PriceIn == _smPri { // 更新操作
-			ordRs, err := CreateOrder(symbol, v.Quantity, smPri, binance.SideTypeSell)
-			if err != nil {
-				fmt.Println("AutoGo CreateOrder sell err: ", err, v)
-				break
-			}
-			err = UpdateTx(fmt.Sprintf("order_in=%d", v.OrderIn), map[string]interface{}{
-				"order_out":        ordRs.OrderID,
-				"order_out_status": 1,
-				"status":           1,
+		if res.Status == "FILLED" {
+			err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), map[string]interface{}{
+				"order_in_status": 1, // 0委托，1成交，2取消
 			})
 			if err != nil {
-				fmt.Println("AutoGo UpdateTx sell err:", err, v)
-				break
+				fmt.Println("checkOrd UpdateTx err: ", err, tx)
+				continue
 			}
+			fmt.Println("checkOrd UpdateTx succeed", tx)
 		}
 	}
+}
+
+func checkSell(txs []*BnTxs, _smPri, symbol string) {
+	shouldSell := false
+	var tx *BnTxs
+	for _, v := range txs {
+		if v.PriceIn == _smPri && v.OrderInStatus == 1 && v.OrderOutStatus == 0 { // 价格匹配&&委托成功&&未建立委托
+			shouldSell = true
+			tx = v
+			break
+		}
+	}
+	if !shouldSell {
+		return
+	}
+	ordRs, err := CreateOrder(symbol, tx.Quantity, _smPri, binance.SideTypeSell)
+	if err != nil {
+		fmt.Println("AutoGo CreateOrder sell err: ", err)
+		return
+	}
+	err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), map[string]interface{}{
+		"order_out":        ordRs.OrderID,
+		"order_out_status": 2, // 1委托，2成交，3取消
+		"status":           1, // 因为使用购买价卖出，因此能够马上卖出
+	})
+	if err != nil {
+		fmt.Println("AutoGo UpdateTx sell err:", err, tx)
+		return
+	}
+	fmt.Println("AutoGo CreateTx sell succeed", tx)
+}
+
+func checkBuy(txs []*BnTxs, smPri, symbol string) {
+	shouldBuy := true
+	for _, v := range txs {
+		if v.PriceIn == smPri { // 如果存在小一点的价格，则不买了
+			fmt.Println("checkBuy with order", v, smPri)
+			shouldBuy = false
+			break
+		}
+	}
+	if !shouldBuy {
+		return
+	}
+	quantity := gPriceToQuantityMap[smPri]
+	ordRs, err := CreateOrder(symbol, quantity, smPri, binance.SideTypeBuy)
+	if err != nil {
+		fmt.Println("AutoGo CreateOrder buy err: ", err, quantity, smPri)
+		return
+	}
+	tx := BnTxs{
+		Symbol:   symbol,
+		Quantity: quantity,
+		PriceIn:  smPri,
+		OrderIn:  ordRs.OrderID,
+	}
+	if err := CreateTx(&tx); err != nil {
+		fmt.Println("AutoGo CreateTx buy err: ", err, tx)
+		return
+	}
+	fmt.Println("AutoGo CreateTx buy succeed", tx)
 }

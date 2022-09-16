@@ -32,7 +32,6 @@ type BnTxs struct {
 	interest       string    `json:"interest"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
-	SettledAt      time.Time `json:"settled_at"`
 }
 
 // 创建
@@ -42,5 +41,5 @@ func CreateTx(tx *BnTxs) error {
 
 // 更新
 func UpdateTx(cons string, attrs map[string]interface{}) error {
-	return gDb.Updates(attrs).Where(cons).Error
+	return gDb.Table("bn_txs").Where(cons).Updates(attrs).Error
 }

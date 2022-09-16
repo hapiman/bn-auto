@@ -22,6 +22,10 @@ func CreateOrder(symbol, quantity, price string, side binance.SideType) (res *bi
 		Price(price).Do(context.Background())
 }
 
+func GetOrder(symbol string, orderId int64) (res *binance.Order, err error) {
+	return client.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(context.Background())
+}
+
 func ListOrders(symbol string) (res []*binance.Order, err error) { // 需要挂起来订单才能看到
 	return client.NewListOpenOrdersService().Symbol(symbol).
 		Do(context.Background())
