@@ -9,7 +9,8 @@ import (
 var gDb *gorm.DB
 
 func init() {
-	dsn := "root:abc123@tcp(127.0.0.1:3306)/cosmosdb?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:abc123@tcp(8.210.18.143:3306)/cosmosdb?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn = gDsn
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)

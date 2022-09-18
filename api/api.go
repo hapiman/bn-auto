@@ -9,7 +9,7 @@ import (
 var client *binance.Client
 
 func init() {
-	client = binance.NewClient(apiKey, secretKey)
+	client = binance.NewClient(gApiKey, gSecretKey)
 }
 
 func CreateOrder(symbol, quantity, price string, side binance.SideType) (res *binance.CreateOrderResponse, err error) {

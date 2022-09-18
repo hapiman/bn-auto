@@ -2,6 +2,14 @@
 
 - [go-binance](https://github.com/adshao/go-binance)
 
+交叉编译，
+
+```sh
+CGO_ENABLED=0  GOOS=linux  GOARCH=amd64  go build main.go
+```
+
+
+
 ## 数据库 
 存放订单数据，便于记录买卖操作和计算利息 
 ```sql

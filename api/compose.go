@@ -100,7 +100,6 @@ func CheckOrd(symbol string) {
 			continue
 		}
 		res, err := GetOrder(symbol, tx.OrderIn)
-		fmt.Println("res---->")
 		if err != nil {
 			fmt.Println("CheckOrd GetOrder err", err)
 			continue
