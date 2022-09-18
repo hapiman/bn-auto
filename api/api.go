@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/adshao/go-binance/v2"
-	"os"
 )
 
 var client *binance.Client
 
 func init() {
-	var apiKey = os.Getenv("BnApiKey")
-	var secretKey = os.Getenv("BnSecretKey")
 	client = binance.NewClient(apiKey, secretKey)
 }
 
@@ -56,10 +53,16 @@ func ListTickerPrice(symbols []string) (pMap map[string]string) {
 }
 
 func GetPrice(symbol string) string {
-	mp := ListTickerPrice([]string{symbol})
-	_, ok := mp[symbol]
-	if !ok {
-		panic("unexpected error")
+	tryNum := 3
+	for {
+		tryNum--
+
+		mp := ListTickerPrice([]string{symbol})
+		_, ok := mp[symbol]
+		if !ok {
+			continue
+		}
+		return mp[symbol]
 	}
-	return mp[symbol]
+	return ""
 }

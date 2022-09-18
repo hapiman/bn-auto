@@ -1,0 +1,6 @@
+AutoGo unsettled order length:  4
+checkBuy with order &{8 ATOMUSDT 1.22 16.4  1777836960 0 0 0 0  2022-09-17 17:22:00 +0800 CST 2022-09-17 17:22:00 +0800 CST} 16.4
+CheckOrd GetOrder err <APIError> code=-2014, msg=API-key format invalid.
+CheckOrd GetOrder err <APIError> code=-2014, msg=API-key format invalid.
+AutoGo unsettled order length:  4
+checkBuy with order &{8 ATOMUSDT 1.22 16.4  1777836960 0 0 0 0  2022-09-17 17:22:00 +0800 CST 2022-09-17 17:22:00 +0800 CST} 16.4
