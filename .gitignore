@@ -4,3 +4,4 @@ data.log
 NOTE.md
 nohup.out
 bn-auto
+api/key.go
