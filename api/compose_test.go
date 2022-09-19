@@ -6,15 +6,20 @@ import (
 	"testing"
 )
 
+const gridAmount = 40
+
 func decimal(value float64) float64 {
 	value, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", value), 64)
 	return value
 }
 
 func TestAutoGo(t *testing.T) {
-	for i := 10.0; i <= 18; i += 0.2 {
-		// fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(20/i))
-		fmt.Printf("\"%v\",", decimal(i))
+	for i := 10.0; i < 18; i += 0.2 {
+		fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
+		// fmt.Printf("\"%v\",", decimal(i))
+	}
+	for i := float64(18 + 0.25); i <= 20; i += 0.25 {
+		fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
 	}
 }
 
@@ -39,7 +44,7 @@ func Test_calcInterest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calcInterest(tt.args.quantity, tt.args.price); got != tt.want {
+			if got := calcInterest(tt.args.quantity, tt.args.price, ""); got != tt.want {
 				t.Errorf("calcInterest() = %v, want %v", got, tt.want)
 			}
 		})

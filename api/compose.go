@@ -9,28 +9,28 @@ import (
 
 // 交易网格
 var gPriceToQuantityMap = map[string]string{
-	"10":   "2",
-	"10.2": "1.96",
-	"10.4": "1.92",
-	"10.6": "1.89",
-	"10.8": "1.85",
-	"11":   "1.82",
-	"11.2": "1.79",
-	"11.4": "1.75",
-	"11.6": "1.72",
-	"11.8": "1.69",
-	"12":   "1.67",
-	"12.2": "1.64",
-	"12.4": "1.61",
-	"12.6": "1.59",
-	"12.8": "1.56",
-	"13":   "1.54",
-	"13.2": "1.52",
-	"13.4": "1.49",
-	"13.6": "1.47",
-	"13.8": "1.45",
-	"14":   "1.43",
-	"14.2": "1.41",
+	"10":   "4",
+	"10.2": "3.92",
+	"10.4": "3.85",
+	"10.6": "3.77",
+	"10.8": "3.7",
+	"11":   "3.64",
+	"11.2": "3.57",
+	"11.4": "3.51",
+	"11.6": "3.45",
+	"11.8": "3.39",
+	"12":   "3.33",
+	"12.2": "3.28",
+	"12.4": "3.23",
+	"12.6": "3.17",
+	"12.8": "3.13",
+	"13":   "3.08",
+	"13.2": "3.03",
+	"13.4": "2.99",
+	"13.6": "2.94",
+	"13.8": "2.9",
+	"14":   "2.86",
+	"14.2": "2.82",
 	"14.4": "1.39",
 	"14.6": "1.37",
 	"14.8": "1.35",
@@ -120,11 +120,12 @@ func CheckOrd(symbol string) {
 
 		// 计算利息
 		interest := calcInterest(tx.Quantity, res.Price, res.CummulativeQuoteQuantity)
-		err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), map[string]interface{}{
+		body := map[string]interface{}{
 			"price_out":  res.Price,
 			"interest":   interest,
 			"settled_at": time.Now(),
-		})
+		}
+		err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), body)
 		if err != nil {
 			fmt.Println("CheckOrd sell UpdateTx err: ", err, tx)
 			continue
@@ -161,8 +162,7 @@ func calcInterest(quantity, price, lastAmount string) string {
 	q, _ := strconv.ParseFloat(quantity, 64)
 	p, _ := strconv.ParseFloat(price, 64)
 	la, _ := strconv.ParseFloat(lastAmount, 64)
-
-	return fmt.Sprintf("%f", la-q*p-0.03)
+	return fmt.Sprintf("%f", la-q*p-la*0.0015)
 }
 
 func checkSell(txs []*BnTxs, _smPri, symbol string) {
