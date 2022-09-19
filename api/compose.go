@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/adshao/go-binance/v2"
+	"strconv"
 	"time"
 )
 
@@ -62,6 +63,14 @@ func queryUnSettledTxs() (txs []*BnTxs) {
 	return
 }
 
+func querySettledTxs() (txs []*BnTxs) {
+	err := gDb.Raw("select * from bn_txs where status=1").Scan(&txs).Error
+	if err != nil {
+		fmt.Println("querySettledTxs err", err)
+	}
+	return
+}
+
 func getLeftAndRightPrice(price string) (sm, lg string) {
 	for k := range gPriceList {
 		if gPriceList[k] <= price && gPriceList[k+1] >= price {
@@ -94,28 +103,66 @@ func SyncOrd(symbol string) {
 }
 
 func CheckOrd(symbol string) {
+	// 处理卖出订单
+	sTxs := querySettledTxs()
+	for _, tx := range sTxs {
+		if tx.OrderOut == 0 || tx.PriceOut != "" {
+			continue
+		}
+		res, err := GetOrder(symbol, tx.OrderOut)
+		if err != nil {
+			fmt.Println("CheckOrd sell GetOrder err", err)
+			continue
+		}
+		if res.Status != "FILLED" {
+			continue
+		}
+
+		// 计算利息
+		interest := calcInterest(tx.Quantity, res.Price, res.CummulativeQuoteQuantity)
+		err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), map[string]interface{}{
+			"price_out":  res.Price,
+			"interest":   interest,
+			"settled_at": time.Now(),
+		})
+		if err != nil {
+			fmt.Println("CheckOrd sell UpdateTx err: ", err, tx)
+			continue
+		}
+		fmt.Println("CheckOrd sell UpdateTx succeed", tx)
+	}
+	// 处理买入订单
 	txs := queryUnSettledTxs()
 	for _, tx := range txs {
 		if tx.OrderInStatus != 0 {
 			continue
 		}
+
 		res, err := GetOrder(symbol, tx.OrderIn)
 		if err != nil {
 			fmt.Println("CheckOrd GetOrder err", err)
 			continue
 		}
-
-		if res.Status == "FILLED" {
-			err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), map[string]interface{}{
-				"order_in_status": 1, // 0委托，1成交，2取消
-			})
-			if err != nil {
-				fmt.Println("checkOrd UpdateTx err: ", err, tx)
-				continue
-			}
-			fmt.Println("checkOrd UpdateTx succeed", tx)
+		if res.Status != "FILLED" {
+			continue
 		}
+		err = UpdateTx(fmt.Sprintf("order_in=%d", tx.OrderIn), map[string]interface{}{
+			"order_in_status": 1, // 0委托，1成交，2取消
+		})
+		if err != nil {
+			fmt.Println("checkOrd buy UpdateTx err: ", err, tx)
+			continue
+		}
+		fmt.Println("checkOrd buy UpdateTx succeed", tx)
 	}
+}
+
+func calcInterest(quantity, price, lastAmount string) string {
+	q, _ := strconv.ParseFloat(quantity, 64)
+	p, _ := strconv.ParseFloat(price, 64)
+	la, _ := strconv.ParseFloat(lastAmount, 64)
+
+	return fmt.Sprintf("%f", la-q*p-0.03)
 }
 
 func checkSell(txs []*BnTxs, _smPri, symbol string) {

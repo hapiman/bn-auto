@@ -17,3 +17,31 @@ func TestAutoGo(t *testing.T) {
 		fmt.Printf("\"%v\",", decimal(i))
 	}
 }
+
+func Test_calcInterest(t *testing.T) {
+	type args struct {
+		quantity string
+		price    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"Test_calcInterest1", args{
+			quantity: "1.28",
+			price:    "1.56",
+		}, "1.996800,"},
+		{"Test_calcInterest1", args{
+			quantity: "1.28",
+			price:    "1.58002",
+		}, "2.022426,"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := calcInterest(tt.args.quantity, tt.args.price); got != tt.want {
+				t.Errorf("calcInterest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
