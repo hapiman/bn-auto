@@ -6,9 +6,9 @@ import (
 )
 
 func main() {
-	symbol := "ATOMUSDT"
+	symbol := "ATOMBUSD"
 	for {
-		api.CheckOrd(symbol)
+		api.CheckOrd()
 		api.AutoGo(symbol)
 		time.Sleep(time.Second * 20)
 	}

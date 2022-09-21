@@ -92,7 +92,7 @@ func AutoGo(symbol string) {
 	txs := queryUnSettledTxs()
 	fmt.Println("AutoGo unsettled order length: ", len(txs), "price:", price)
 	checkBuy(txs, smPri, symbol)
-	checkSell(txs, _smPri, symbol)
+	checkSell(txs, _smPri)
 }
 
 func SyncOrd(symbol string) {
@@ -102,14 +102,14 @@ func SyncOrd(symbol string) {
 	}
 }
 
-func CheckOrd(symbol string) {
+func CheckOrd() {
 	// 处理卖出订单
 	sTxs := querySettledTxs()
 	for _, tx := range sTxs {
 		if tx.OrderOut == 0 || tx.PriceOut != "" {
 			continue
 		}
-		res, err := GetOrder(symbol, tx.OrderOut)
+		res, err := GetOrder(tx.Symbol, tx.OrderOut)
 		if err != nil {
 			fmt.Println("CheckOrd sell GetOrder err", err)
 			continue
@@ -132,6 +132,7 @@ func CheckOrd(symbol string) {
 		}
 		fmt.Println("CheckOrd sell UpdateTx succeed", tx)
 	}
+
 	// 处理买入订单
 	txs := queryUnSettledTxs()
 	for _, tx := range txs {
@@ -139,7 +140,7 @@ func CheckOrd(symbol string) {
 			continue
 		}
 
-		res, err := GetOrder(symbol, tx.OrderIn)
+		res, err := GetOrder(tx.Symbol, tx.OrderIn)
 		if err != nil {
 			fmt.Println("CheckOrd GetOrder err", err)
 			continue
@@ -165,7 +166,7 @@ func calcInterest(quantity, price, lastAmount string) string {
 	return fmt.Sprintf("%f", la-q*p-la*0.0015)
 }
 
-func checkSell(txs []*BnTxs, _smPri, symbol string) {
+func checkSell(txs []*BnTxs, _smPri string) {
 	shouldSell := false
 	var tx *BnTxs
 	for _, v := range txs {
@@ -178,7 +179,7 @@ func checkSell(txs []*BnTxs, _smPri, symbol string) {
 	if !shouldSell {
 		return
 	}
-	ordRs, err := CreateOrder(symbol, tx.Quantity, _smPri, binance.SideTypeSell)
+	ordRs, err := CreateOrder(tx.Symbol, tx.Quantity, _smPri, binance.SideTypeSell)
 	if err != nil {
 		fmt.Println("AutoGo CreateOrder sell err: ", err)
 		return
