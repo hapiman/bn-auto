@@ -95,13 +95,6 @@ func AutoGo(symbol string) {
 	checkSell(txs, _smPri)
 }
 
-func SyncOrd(symbol string) {
-	for {
-		CheckOrd(symbol)
-		time.Sleep(time.Second * 10)
-	}
-}
-
 func CheckOrd() {
 	// 处理卖出订单
 	sTxs := querySettledTxs()
