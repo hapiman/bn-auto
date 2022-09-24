@@ -55,8 +55,8 @@ var gPriceToQuantityMap = map[string]string{
 // 价格列表
 var gPriceList = []string{"10", "10.2", "10.4", "10.6", "10.8", "11", "11.2", "11.4", "11.6", "11.8", "12", "12.2", "12.4", "12.6", "12.8", "13", "13.2", "13.4", "13.6", "13.8", "14", "14.2", "14.4", "14.6", "14.8", "15", "15.2", "15.4", "15.6", "15.8", "16", "16.2", "16.4", "16.6", "16.8", "17", "17.2", "17.4", "17.6", "17.8", "18"}
 
-func queryUnSettledTxs() (txs []*BnTxs) {
-	err := gDb.Raw("select * from bn_txs where status=0").Scan(&txs).Error
+func queryUnSettledTxs() (txs []*BnTxs, err error) {
+	err = gDb.Raw("select * from bn_txs where status=0").Scan(&txs).Error
 	if err != nil {
 		fmt.Println("queryUnSettledTxs err", err)
 	}
@@ -89,7 +89,10 @@ func AutoGo(symbol string) {
 	}
 	smPri, _ := getLeftAndRightPrice(price)  // 14.8 => (14.6,14.8) 或者 14.81 => (14.8,15)
 	_smPri, _ := getLeftAndRightPrice(smPri) // 14.6 => (14.4,16.6)
-	txs := queryUnSettledTxs()
+	txs, err := queryUnSettledTxs()
+	if err != nil {
+		return
+	}
 	fmt.Println("AutoGo unsettled order length: ", len(txs), "price:", price)
 	checkBuy(txs, smPri, symbol)
 	checkSell(txs, _smPri)
@@ -127,7 +130,7 @@ func CheckOrd() {
 	}
 
 	// 处理买入订单
-	txs := queryUnSettledTxs()
+	txs, _ := queryUnSettledTxs()
 	for _, tx := range txs {
 		if tx.OrderInStatus != 0 {
 			continue
@@ -156,7 +159,7 @@ func calcInterest(quantity, price, lastAmount string) string {
 	q, _ := strconv.ParseFloat(quantity, 64)
 	p, _ := strconv.ParseFloat(price, 64)
 	la, _ := strconv.ParseFloat(lastAmount, 64)
-	return fmt.Sprintf("%f", la-q*p-la*0.0015)
+	return fmt.Sprintf("%f", la-q*p-la*0.00075)
 }
 
 func checkSell(txs []*BnTxs, _smPri string) {
