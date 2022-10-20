@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const gridAmount = 40
+const gridAmount = 10
 
 func decimal(value float64) float64 {
 	value, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", value), 64)
@@ -14,7 +14,7 @@ func decimal(value float64) float64 {
 }
 
 func TestAutoGo(t *testing.T) {
-	for i := 10.0; i < 18; i += 0.2 {
+	for i := 7.0; i < 8; i += 0.1 {
 		fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
 		// fmt.Printf("\"%v\",", decimal(i))
 	}

@@ -55,29 +55,60 @@ var gPriceToQuantityMap = map[string]string{
 // 价格列表
 var gPriceList = []string{"10", "10.2", "10.4", "10.6", "10.8", "11", "11.2", "11.4", "11.6", "11.8", "12", "12.2", "12.4", "12.6", "12.8", "13", "13.2", "13.4", "13.6", "13.8", "14", "14.2", "14.4", "14.6", "14.8", "15", "15.2", "15.4", "15.6", "15.8", "16", "16.2", "16.4", "16.6", "16.8", "17", "17.2", "17.4", "17.6", "17.8", "18"}
 
-func queryUnSettledTxs() (txs []*BnTxs, err error) {
-	err = gDb.Raw("select * from bn_txs where status=0").Scan(&txs).Error
+var gPriceList2 = []string{"7.0", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "8"}
+
+var gPriceToQuantityMap2 = map[string]string{
+	"7":   "1.43",
+	"7.1": "1.41",
+	"7.2": "1.39",
+	"7.3": "1.37",
+	"7.4": "1.35",
+	"7.5": "1.33",
+	"7.6": "1.32",
+	"7.7": "1.3",
+	"7.8": "1.28",
+	"7.9": "1.27",
+	"8":   "1.25",
+}
+
+func getPriceCfg(symbol string) (map[string]string, []string) {
+	if symbol == "ATOMBUSD" {
+		return gPriceToQuantityMap, gPriceList
+	}
+
+	if symbol == "APTBUSD" {
+		return gPriceToQuantityMap2, gPriceList2
+	}
+
+	panic("unexpected symbol")
+}
+
+func queryUnSettledTxs(symbol string) (txs []*BnTxs, err error) {
+	err = gDb.Raw(fmt.Sprintf("select * from bn_txs where status=0 and symbol='%s'", symbol)).Scan(&txs).Error
 	if err != nil {
 		fmt.Println("queryUnSettledTxs err", err)
 	}
 	return
 }
 
-func querySettledTxs() (txs []*BnTxs) {
-	err := gDb.Raw("select * from bn_txs where status=1").Scan(&txs).Error
+func querySettledTxs(symbol string) (txs []*BnTxs) {
+	err := gDb.Raw(fmt.Sprintf("select * from bn_txs where status=1 and symbol='%s'", symbol)).Scan(&txs).Error
 	if err != nil {
 		fmt.Println("querySettledTxs err", err)
 	}
 	return
 }
 
-func getLeftAndRightPrice(price string) (sm, lg string) {
-	for k := range gPriceList {
-		if gPriceList[k] <= price && gPriceList[k+1] >= price {
-			return gPriceList[k], gPriceList[k+1]
+func getLeftAndRightPrice(symbol, price string) (sm, lg string) {
+
+	_, priceLs := getPriceCfg(symbol)
+
+	for k := range priceLs {
+		if priceLs[k] <= price && priceLs[k+1] >= price {
+			return priceLs[k], priceLs[k+1]
 		}
 	}
-	panic("unexpected")
+	panic(fmt.Sprintf("%s unexpected price: %s", symbol, price))
 }
 
 // 买的的时候挂委托单，卖的时候现价单，先这样做
@@ -87,9 +118,9 @@ func AutoGo(symbol string) {
 		fmt.Println("AutoGo can not get latest price")
 		return
 	}
-	smPri, _ := getLeftAndRightPrice(price)  // 14.8 => (14.6,14.8) 或者 14.81 => (14.8,15)
-	_smPri, _ := getLeftAndRightPrice(smPri) // 14.6 => (14.4,16.6)
-	txs, err := queryUnSettledTxs()
+	smPri, _ := getLeftAndRightPrice(symbol, price)  // 14.8 => (14.6,14.8) 或者 14.81 => (14.8,15)
+	_smPri, _ := getLeftAndRightPrice(symbol, smPri) // 14.6 => (14.4,16.6)
+	txs, err := queryUnSettledTxs(symbol)
 	if err != nil {
 		return
 	}
@@ -98,9 +129,9 @@ func AutoGo(symbol string) {
 	checkSell(txs, _smPri)
 }
 
-func CheckOrd() {
+func CheckOrd(symbol string) {
 	// 处理卖出订单
-	sTxs := querySettledTxs()
+	sTxs := querySettledTxs(symbol)
 	for _, tx := range sTxs {
 		if tx.OrderOut == 0 || tx.PriceOut != "" {
 			continue
@@ -130,7 +161,7 @@ func CheckOrd() {
 	}
 
 	// 处理买入订单
-	txs, _ := queryUnSettledTxs()
+	txs, _ := queryUnSettledTxs(symbol)
 	for _, tx := range txs {
 		if tx.OrderInStatus != 0 {
 			continue
@@ -204,7 +235,10 @@ func checkBuy(txs []*BnTxs, smPri, symbol string) {
 	if !shouldBuy {
 		return
 	}
-	quantity := gPriceToQuantityMap[smPri]
+
+	priceQuantity, _ := getPriceCfg(symbol)
+
+	quantity := priceQuantity[smPri]
 	ordRs, err := CreateOrder(symbol, quantity, smPri, binance.SideTypeBuy)
 	if err != nil {
 		fmt.Println("AutoGo CreateOrder buy err: ", err, quantity, smPri)
