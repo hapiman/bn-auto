@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const gridAmount = 10
+const gridAmount = 20
 
 func decimal(value float64) float64 {
 	value, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", value), 64)
