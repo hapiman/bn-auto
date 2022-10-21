@@ -14,7 +14,7 @@ func decimal(value float64) float64 {
 }
 
 func TestAutoGo(t *testing.T) {
-	for i := 7.0; i < 8; i += 0.1 {
+	for i := 6.0; i < 8; i += 0.1 {
 		fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
 		// fmt.Printf("\"%v\",", decimal(i))
 	}
