@@ -14,9 +14,9 @@ func decimal(value float64) float64 {
 }
 
 func TestAutoGo(t *testing.T) {
-	for i := 6.0; i < 8; i += 0.1 {
-		fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
-		// fmt.Printf("\"%v\",", decimal(i))
+	for i := 8.0; i < 10; i += 0.1 {
+		// fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
+		fmt.Printf("\"%v\",", decimal(i))
 	}
 	for i := float64(18 + 0.25); i <= 20; i += 0.25 {
 		fmt.Printf("\"%v\":\"%v\",\n", decimal(i), decimal(gridAmount/i))
