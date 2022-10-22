@@ -114,6 +114,9 @@ func getLeftAndRightPrice(symbol, price string) (sm, lg string) {
 	_, priceLs := getPriceCfg(symbol)
 
 	for k := range priceLs {
+		if len(priceLs) >= k+1 {
+			break
+		}
 		if priceLs[k] <= price && priceLs[k+1] >= price {
 			return priceLs[k], priceLs[k+1]
 		}
