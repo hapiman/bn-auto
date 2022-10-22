@@ -134,9 +134,6 @@ func getLeftAndRightPrice(symbol, price string) (sm, lg string) {
 	_, priceLs := getPriceCfg(symbol)
 
 	for k := range priceLs {
-		if len(priceLs) >= k+1 {
-			break
-		}
 		if priceLs[k] <= price && priceLs[k+1] >= price {
 			return priceLs[k], priceLs[k+1]
 		}
@@ -230,10 +227,10 @@ func checkSell(txs []*BnTxs, _smPri string) {
 	shouldSell := false
 	var tx *BnTxs
 	for _, v := range txs {
-		if v.PriceIn == _smPri && v.OrderInStatus == 1 && v.OrderOutStatus == 0 { // 价格匹配&&委托成功&&未建立委托
+		if v.PriceIn <= _smPri && v.OrderInStatus == 1 && v.OrderOutStatus == 0 { // 价格匹配&&委托成功&&未建立委托
 			shouldSell = true
 			tx = v
-			break
+			break // todo：这里可以同时把满足条件的多个都给卖掉
 		}
 	}
 	if !shouldSell {
